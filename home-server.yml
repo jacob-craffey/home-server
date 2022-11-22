@@ -1,0 +1,93 @@
+version: "2.1"
+services:
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: stack_plex
+    ports:
+      - 32400:32400/tcp
+    environment:
+      - PUID=1027
+      - PGID=100
+      - PLEX_CLAIM=${PLEX_CLAIM}
+    volumes:
+      - "${BASE_DIR}/plex/config:/config"
+      - "${PLEX_MEDIA_DIR}/TV Shows:/tv"
+      - "${PLEX_MEDIA_DIR}/Movies:/movies"
+    restart: unless-stopped
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: stack_portainer
+    restart: unless-stopped
+    ports:
+      - 9000:9000
+    volumes:
+      - ${DOCKER_SOCK}:/var/run/docker.sock
+      - ${BASE_DIR}/portainer:/data
+
+  dashdot:
+    image: mauricenino/dashdot:latest
+    container_name: stack_dashdot
+    restart: unless-stopped
+    ports:
+      - 3001:3001
+
+  homarr:
+    container_name: stack_homarr
+    image: ghcr.io/ajnart/homarr:latest
+    restart: unless-stopped
+    volumes:
+      - "${BASE_DIR}/homarr/configs:/app/data/configs"
+      - "${BASE_DIR}/homarr/icons:/app/public/icons"
+    ports:
+      - "7575:7575"
+
+  watchtower:
+    container_name: stack_watchtower
+    image: containrrr/watchtower:latest
+    volumes:
+      - "${DOCKER_SOCK}:/var/run/docker.sock"
+    environment:
+      - TZ=${WATCHTOWER_TZ}
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_INCLUDE_STOPPED=true
+      - WATCHTOWER_REVIVED_STOPPED=true
+      - WATCHTOWER_SCHEDULE=${WATCHTOWER_SCHEDULE}
+
+  transmission:
+    container_name: stack_transmission
+    image: haugene/transmission-openvpn:latest
+    ports:
+      - 32770:8888
+      - 32771:9091
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ${BASE_DIR}/transmission-openvpn/resolv.conf:/etc/resolv.conf
+      - ${BASE_DIR}/transmission-openvpn/downloads:/data/completed
+    environment:
+      - CREATE_TUN_DEVICE=true
+      - ENABLE_UFW=false
+      - GLOBAL_APPLY_PERMISSIONS=true
+      - HEALTH_CHECK_HOST=google.com
+      - LOG_TO_STDOUT=false
+      - OPENVPN_PROVIDER=${TRANSMISSION_PROVIDER}
+      - OPENVPN_USERNAME=${TRANSMISSION_OVPN_USERNAME}
+      - OPENVPN_PASSWORD=${TRANSMISSION_OVPN_PASSWORD}
+      - PEER_DNS=true
+      - PEER_DNS_PIN_ROUTES=true
+      - PGID=1000
+      - PUID=1000
+      - SELFHEAL=false
+      - TRANSMISSION_DOWNLOAD_DIR=/data/completed
+      - TRANSMISSION_INCOMPLETE_DIR=/data/incomplete
+      - TRANSMISSION_HOME=/config/transmission-home
+      - TRANSMISSION_RPC_PASSWORD=${TRANSMISSION_RPC_PASSWORD}
+      - TRANSMISSION_RPC_USERNAME=${TRANSMISSION_RPC_USERNAME}
+      - TRANSMISSION_WATCH_DIR=/data/watch
+      - UFW_ALLOW_GW_NET=false
+      - UFW_DISABLE_IPTABLES_REJECT=false
+      - WEBPROXY_ENABLED=false
+      - WEBPROXY_PORT=8118
