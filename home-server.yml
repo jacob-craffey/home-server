@@ -42,13 +42,70 @@ services:
     ports:
       - "7575:7575"
 
+  sonarr:
+    container_name: stack_sonarr
+    image: lscr.io/linuxserver/sonarr:latest
+    restart: unless-stopped
+    ports:
+      - 8989:8989
+    volumes:
+      - "${BASE_DIR}/sonarr:/config"
+      - "${BASE_DIR}/transmission-openvpn/downloads:/downloads"
+      - "${PLEX_MEDIA_DIR}/TV Shows:/tv"
+    environment:
+      - TZ=${TZ}
+      - PUID=${SONARR_PUID}
+      - PGID=${SONARR_PGID}
+
+  radarr:
+    container_name: stack_radarr
+    image: lscr.io/linuxserver/radarr:latest
+    restart: unless-stopped
+    ports:
+      - 7878:7878
+    volumes:
+      - "${BASE_DIR}/radarr:/config"
+      - "${BASE_DIR}/transmission-openvpn/downloads:/downloads"
+      - "${PLEX_MEDIA_DIR}/Movies:/movies"
+    environment:
+      - TZ=${TZ}
+      - PUID=${RADARR_PUID}
+      - PGID=${RADARR_PGID}
+
+  jackett:
+    image: lscr.io/linuxserver/jackett:latest
+    container_name: stack_jackett
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    environment:
+      - PUID=${JACKETT_PUID}
+      - PGID=${JACKETT_PGID}
+      - TZ=${TZ}
+      - AUTO_UPDATE=false
+    ports:
+      - 9117:9117
+    restart: unless-stopped
+
+  overseerr:
+    image: lscr.io/linuxserver/overseerr:latest
+    container_name: stack_overseerr
+    environment:
+      - PUID=${OVERSEER_PUID}
+      - PGID=${OVERSEER_PGID}
+      - TZ=${TZ}
+    volumes:
+      - "${BASE_DIR}/overseerr:/config"
+    ports:
+      - 5055:5055
+    restart: unless-stopped
+
   watchtower:
     container_name: stack_watchtower
     image: containrrr/watchtower:latest
     volumes:
       - "${DOCKER_SOCK}:/var/run/docker.sock"
     environment:
-      - TZ=${WATCHTOWER_TZ}
+      - TZ=${TZ}
       - WATCHTOWER_CLEANUP=true
       - WATCHTOWER_INCLUDE_STOPPED=true
       - WATCHTOWER_REVIVED_STOPPED=true
